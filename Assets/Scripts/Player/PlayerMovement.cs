@@ -4,77 +4,108 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float forwardSpeed;
+    private float forwardSpeed = 0;
     public float moveStep;
     public float timeToMove;
 
-    private bool rightKeyPressed;
-    private bool leftKeyPressed;
+    private Vector2 startTouchPosition;
+    private Vector2 endTouchPosition;
+    private bool swiped;
+    private float deadZoneRadius = 2f;
+
+    private bool rightSwiped;
+    private bool leftSwiped;
 
     private float perc = 0f;
-    private Vector3 currentPos;
     private Vector3 newPos;
+    private float startX;
+    private float endX;
+    private float currentX;
 
     private float timeStartedLerping;
     private float timeSinceLerping;
 
     private int currentLane;
-    private bool canBeMoved;
+    private bool isMovable;
+    private bool canBeSideMoved;
 
     private void Start()
     {
-        currentLane = 1;
-        canBeMoved = true;
+        startX = transform.position.x;
+        newPos.y = 5.5f;
+        newPos.z = -58f;
+        EventsMananger.GameStart += StartMove;
+        EventsMananger.GameOver += StopMove;
+
+        EventsMananger.GameResume += ResumeMove;
     }
 
     private void Update()
     {
-        transform.position += transform.TransformDirection(Vector3.forward) * Time.deltaTime * forwardSpeed;
+        newPos.z += forwardSpeed * Time.deltaTime;
+        newPos.x = currentX;
+        transform.position = newPos;
 
-        if (canBeMoved)
+        if (canBeSideMoved)
         {
-            if (Input.GetKeyDown(KeyCode.D) && canBeMoved)
+
+            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
             {
-                rightKeyPressed = true;
-                canBeMoved = false;
-                StartCoroutine(Move());
-                //Debug.Log("Right Key Pressed");
+                startTouchPosition = Input.GetTouch(0).position;
+                Debug.Log("Began");
+                swiped = false;
             }
 
-            if (Input.GetKeyDown(KeyCode.A) && canBeMoved)
+            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Moved && !swiped)
             {
-                leftKeyPressed = true;
-                canBeMoved = false;
-                StartCoroutine(Move());
-                //Debug.Log("Left Key Pressed");
+                Touch touch = Input.GetTouch(0);
+
+                if ((startTouchPosition - touch.position).magnitude > deadZoneRadius)
+                {
+
+                    endTouchPosition = touch.position;
+
+                    if (endTouchPosition.x < startTouchPosition.x && canBeSideMoved && isMovable)
+                    {
+                        Debug.Log("swiped Left");
+                        leftSwiped = true;
+                        canBeSideMoved = false;
+                        swiped = true;
+                        StartCoroutine(Move());
+                    }
+
+                    if (endTouchPosition.x > startTouchPosition.x && canBeSideMoved && isMovable)
+                    {
+                        Debug.Log("swiped Right");
+                        rightSwiped = true;
+                        canBeSideMoved = false;
+                        swiped = true;
+                        StartCoroutine(Move());
+                    }
+                }
             }
+
         }
 
-        if(PlayerHealth.lifesCount == 0)
-        {
-            forwardSpeed = 0f;
-            canBeMoved = false;
-        }
     }
 
     IEnumerator Move()
     {
-        if (rightKeyPressed)
+        if (rightSwiped)
         {
-           
+
             if (currentLane < 2)
             {
-                currentPos = transform.position;
-                newPos = currentPos;
-                newPos.x += moveStep;
+                startX = transform.position.x;
+                endX = startX + moveStep;
                 timeStartedLerping = Time.time;
-                canBeMoved = false;
+                canBeSideMoved = false;
 
                 while (perc < 1)
                 {
                     timeSinceLerping = Time.time - timeStartedLerping;
                     perc = timeSinceLerping / timeToMove;
-                    transform.position = Vector3.Lerp(currentPos, newPos, perc);
+                    currentX = Mathf.Lerp(startX, endX, perc);
                     yield return null;
                 }
 
@@ -83,28 +114,28 @@ public class PlayerMovement : MonoBehaviour
 
             }
 
-            rightKeyPressed = false;
-            canBeMoved = true;
+            rightSwiped = false;
+            canBeSideMoved = true;
             StopCoroutine(Move());
+
 
         }
 
-        if (leftKeyPressed)
+        if (leftSwiped)
         {
 
-            if(currentLane > 0)
+            if (currentLane > 0)
             {
-                currentPos = transform.position;
-                newPos = currentPos;
-                newPos.x -= moveStep;
+                startX = transform.position.x;
+                endX = startX - moveStep;
                 timeStartedLerping = Time.time;
-                canBeMoved = false;
+                canBeSideMoved = false;
 
                 while (perc < 1)
                 {
                     timeSinceLerping = Time.time - timeStartedLerping;
                     perc = timeSinceLerping / timeToMove;
-                    transform.position = Vector3.Lerp(currentPos, newPos, perc);
+                    currentX = Mathf.Lerp(startX, endX, perc);
                     yield return null;
                 }
 
@@ -113,11 +144,42 @@ public class PlayerMovement : MonoBehaviour
 
             }
 
-            leftKeyPressed = false;
-            canBeMoved = true;
+            leftSwiped = false;
+            canBeSideMoved = true;
             StopCoroutine(Move());
+
         }
 
     }
+
+    void StartMove()
+    {
+        currentLane = 1;
+        isMovable = true;
+        canBeSideMoved = true;
+        forwardSpeed = 18f;
+        EventsMananger.GameStart -= StartMove;
+    }
+
+    public void ResumeMove()
+    {
+        isMovable = true;
+        canBeSideMoved = true;
+        forwardSpeed = 18f;
+        EventsMananger.GameResume -= ResumeMove;
+
+        //EventsMananger.GameOver += StopMove;
+
+    }
+
+    public void StopMove()
+    {
+        forwardSpeed = 0f;
+        canBeSideMoved = false;
+        isMovable = false;
+        StopCoroutine(Move());
+        //EventsMananger.GameOver -= StopMove;
+    }
+
 }
 

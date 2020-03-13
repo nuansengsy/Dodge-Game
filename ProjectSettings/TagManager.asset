@@ -6,9 +6,12 @@ TagManager:
   tags:
   - RelocatePathTrigger
   - Obstacle
-  - Heart
   - RelocateObstacleTrigger
   - RelocatePathZone
+  - ObstacleObject
+  - TargetObject
+  - ColorChanger
+  - Heart
   layers:
   - Default
   - TransparentFX
@@ -19,7 +22,7 @@ TagManager:
   - 
   - 
   - PostProcessing
-  - 
+  - Glow Layer
   - 
   - 
   - 

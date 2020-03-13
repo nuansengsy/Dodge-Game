@@ -8,21 +8,20 @@ public class ObjectPoolItem
 {
     public GameObject objectToPool;
     public int amountToPool;
-    public int chanceToSpawn;
+    public float chanceToSpawn;
     public bool shouldExpand;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
+
 public class ObjectPooler : MonoBehaviour
 {
     public static ObjectPooler SharedInstance;
     public List<ObjectPoolItem> itemsToPool; //List with types of obstacles;
     public List<GameObject> pooledObjects;
 
-    public int obstacleDensity;
+    public int objectsDensity;
     public Renderer rend;
+    public Collider coll;
 
     void Awake()
     {
@@ -44,10 +43,11 @@ public class ObjectPooler : MonoBehaviour
         }
 
         itemsToPool.Sort((x, y) => x.chanceToSpawn.CompareTo(y.chanceToSpawn));
+        //Debug.Log(pooledObjects.Count);
 
     }
 
-    public GameObject ChooseRandomObstacle()
+    public GameObject ChooseRandomObjectType()
     {
         float random = Random.Range(1, 100);
         float minValue = 0f;
@@ -55,16 +55,16 @@ public class ObjectPooler : MonoBehaviour
         string choosenObstacleType = null;
 
         random = Random.Range(1, 100);
-
-        if (random < obstacleDensity)
+        if (random < objectsDensity)
         {
             random = Random.Range(1, 100);
             for (int i = 0; i < itemsToPool.Count; i++)
             {
                 maxValue = minValue + itemsToPool[i].chanceToSpawn;
-                if(random >= minValue & random < maxValue)
+                if (random >= minValue & random < maxValue)
                 {
                     choosenObstacleType = itemsToPool[i].objectToPool.GetComponent<AdditionalData>().objectType;
+
                 }
 
                 minValue += itemsToPool[i].chanceToSpawn;
@@ -76,6 +76,7 @@ public class ObjectPooler : MonoBehaviour
             choosenObstacleType = null; 
         }
 
+        
         return GetPooledObject(choosenObstacleType);
 
     }
@@ -93,6 +94,13 @@ public class ObjectPooler : MonoBehaviour
                     rend = pooledObjects[i].GetComponent<Renderer>();
                     rend.enabled = true;
                 }
+
+                if (pooledObjects[i].GetComponent<Collider>() != null)
+                {
+                    coll = pooledObjects[i].GetComponent<Collider>();
+                    coll.enabled = true;
+                }
+
                 return pooledObjects[i];
                 
             }

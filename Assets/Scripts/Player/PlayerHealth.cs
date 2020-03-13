@@ -5,38 +5,49 @@ using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
-    public static bool isAlive;
-    public static int lifesCount;
+    public int lifesNumber;
     public Text displayLifesCount;
+    private Renderer rend;
 
     void Start()
     {
-        isAlive = true;
-        lifesCount = 3;
-        displayLifesCount.text = "Lifes " + lifesCount;
-    }
+        rend = GetComponent<Renderer>();
+        lifesNumber = 3;
+        displayLifesCount.text = lifesNumber.ToString();
 
-    void Update()
-    {
-        //displayLifesCount.text = "Lifes " + lifesCount;
+        EventsMananger.EarnReward += PrepareToResumeGame;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.gameObject.tag == "Heart")
-        {
-            lifesCount++;
-            displayLifesCount.text = "Lifes " + lifesCount;
-        }
 
-        if (other.gameObject.tag == "Obstacle")
+        if (other.gameObject.tag == "ObstacleObject")
         {
-            lifesCount--;
-            displayLifesCount.text = "Lifes " + lifesCount;
-            if(lifesCount <= 0)
+            lifesNumber--;
+            //Debug.Log("Lifes -1");
+            displayLifesCount.text = lifesNumber.ToString();
+            SoundController.SharedInstance.PlaySound("ObstacleHitSound");
+
+            if (lifesNumber <= 0)
             {
-                isAlive = false;
+                    rend.enabled = false;
+                    EventsMananger.SharedInstance.EndGame();
             }
         }
+
+        if (other.gameObject.tag == "ColorChanger")
+        {
+            ColorManager.SharedInstance.ApplyNewColorSet();
+            SoundController.SharedInstance.PlaySound("ColorSwithedSound");
+        }
+
+    }
+
+    void PrepareToResumeGame()
+    {
+        lifesNumber++;
+        displayLifesCount.text = lifesNumber.ToString();
+        rend.enabled = true;
+        EventsMananger.EarnReward -= PrepareToResumeGame;
     }
 }

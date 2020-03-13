@@ -26,6 +26,9 @@ public class SpawnObstacles : MonoBehaviour
     [Header("Positioning")]
     public Vector3[] allSpawnPositions;
 
+    [Header("Percentage of Target Objects")]
+    public float targetObjectsRate;
+
     SpawnPointInfo[] allSpawnPoints = new SpawnPointInfo[9]; //rowsNumber * columnsNumber
     List<SpawnPointInfo> freeSpawnPoints = new List<SpawnPointInfo>();
 
@@ -33,7 +36,7 @@ public class SpawnObstacles : MonoBehaviour
     {
         GetSpawnPositions();
         ExcludeFreePath();
-        PlaceObstacles();
+        PlaceObjects();
     }
 
     public void GetSpawnPositions()
@@ -41,25 +44,17 @@ public class SpawnObstacles : MonoBehaviour
         
         float localX, localY, localZ;
         int columnIndex, rowIndex; // i j
-        GameObject point;
+
         for (rowIndex = 0; rowIndex < rowsNumber; rowIndex++)
         {
             for (columnIndex = 0; columnIndex < columnsNumber; columnIndex++)
             {
                 localX = ((2 * columnIndex - columnsNumber * 1f + 1) / (2f * columnsNumber));
                 localZ = ((2 * rowIndex - rowsNumber * 1f + 1) / (2f * rowsNumber));
-                localY = 0.6f; //temporary
+                localY = 0.6f; 
                 allSpawnPoints[rowIndex * columnsNumber + columnIndex] = new SpawnPointInfo();
                 allSpawnPoints[rowIndex * columnsNumber + columnIndex].pointIndex = rowIndex * columnsNumber + columnIndex;
                 allSpawnPoints[rowIndex * columnsNumber + columnIndex].pointPosition = new Vector3(localX, localY, localZ);
-
-                //point = ObjectPooler.SharedInstance.GetPooledObject("SpawnPoint");
-                //if (point != null)
-                //{
-                //    point.SetActive(true);
-                //    point.transform.SetParent(parentPath);
-                //    point.transform.localPosition = new Vector3(localX, localY, localZ);
-                //}
 
             }
         }
@@ -96,19 +91,25 @@ public class SpawnObstacles : MonoBehaviour
 
     }
 
-    public void PlaceObstacles()
+    public void PlaceObjects()
     {
-        GameObject obstacle = null;
+        GameObject objectToSpawn = null;
         int minPointIndex = 0, maxPointIndex = 0, randomPointIndex = 0;
 
         for (int i = 0; i < allSpawnPoints.Length; i++)
         {
             if (!allSpawnPoints[i].isReserved)
             {
-                obstacle = ObjectPooler.SharedInstance.ChooseRandomObstacle();
                 ///
+                objectToSpawn = ObjectPooler.SharedInstance.ChooseRandomObjectType();
+                if(objectToSpawn != null)
+                {
+                    ResetObjectRole(objectToSpawn);
+                    ColorManager.SharedInstance.ChooseObjectsColors(objectToSpawn);
+                }
                 ///
-                if (obstacle != null && obstacle.GetComponent<AdditionalData>().isMovable)
+
+                if (objectToSpawn != null && objectToSpawn.GetComponent<AdditionalData>().isMovable && objectToSpawn.GetComponent<AdditionalData>().movesHorizontal)
                 {
                     allSpawnPoints[i].isReserved = true;
                     allSpawnPoints[i].isOccupied = true;
@@ -127,7 +128,6 @@ public class SpawnObstacles : MonoBehaviour
                     {
                         if (point.pointIndex >= minPointIndex && point.pointIndex < maxPointIndex && !point.isReserved)
                         {
-                            //Debug.Log(point.pointIndex);
                             freeSpawnPoints.Add(point);
                         }
                     }
@@ -136,39 +136,54 @@ public class SpawnObstacles : MonoBehaviour
                     {
                         randomPointIndex = Random.Range(0, freeSpawnPoints.Count);
                         allSpawnPoints[freeSpawnPoints[randomPointIndex].pointIndex].isReserved = true;
-                        obstacle.GetComponent<AdditionalData>().endPosition = freeSpawnPoints[randomPointIndex].pointPosition;
+                        //picking final destination
+                        objectToSpawn.GetComponent<AdditionalData>().endPosition = freeSpawnPoints[randomPointIndex].pointPosition; 
                         freeSpawnPoints.Clear();
                     }
                     else
                     {
                         allSpawnPoints[i].isReserved = false;
                         allSpawnPoints[i].isOccupied = false;
-                        obstacle = null; //temporary solution;
+                        objectToSpawn = null;
                     }
 
                 }
                 ///
-                if (obstacle != null)
+                if (objectToSpawn != null)
                 {
+                    objectToSpawn.GetComponent<AdditionalData>().allocatedPosition = allSpawnPoints[i].pointPosition;
+
                     allSpawnPoints[i].isReserved = true;
                     allSpawnPoints[i].isOccupied = true;
-                    obstacle.transform.SetParent(parentPath);
-                    obstacle.transform.localPosition = allSpawnPoints[i].pointPosition;
-                    obstacle.SetActive(true);
+                    objectToSpawn.transform.SetParent(parentPath);
+                    objectToSpawn.transform.localPosition = allSpawnPoints[i].pointPosition;
+                    objectToSpawn.SetActive(true);
 
                 }
-                ///
+
             }
 
         }
 
-        //for (int x = 0; x < allSpawnPoints.Length; x++)
-        //{
+    }
 
-        //    Debug.Log("pointIndex =  " + allSpawnPoints[x].pointIndex + " pointPosition =  " + allSpawnPoints[x].pointPosition +
-        //        " IsReserved " + allSpawnPoints[x].isReserved + " IsOccupied " + allSpawnPoints[x].isOccupied +
-        //        " IsPlayerPath " + allSpawnPoints[x].isPlayerPath);
-        //}
+    public void ResetObjectRole(GameObject go)
+    {
+        if(go != null)
+        {
+            if(go.tag != "ColorChanger" && go.tag != "Heart")
+            {
+                if (targetObjectsRate >= Random.Range(1f, 100f))
+                {
+                    go.tag = "TargetObject";
+                }
+                else
+                {
+                    go.tag = "ObstacleObject";
+                }
+            }
+            
+        }
     }
 
 

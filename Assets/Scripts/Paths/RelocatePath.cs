@@ -23,7 +23,7 @@ public class RelocatePath : MonoBehaviour
 
             spawnObstacles.GetSpawnPositions();
             spawnObstacles.ExcludeFreePath();
-            spawnObstacles.PlaceObstacles();
+            spawnObstacles.PlaceObjects();
 
         }
     }

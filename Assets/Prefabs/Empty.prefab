@@ -44,3 +44,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   objectType: SpawnPoint
+  isStationary: 0
+  isMovable: 0
+  movesHorizontal: 0
+  movesVertical: 0
+  allocatedPosition: {x: 0, y: 0, z: 0}
+  endPosition: {x: 0, y: 0, z: 0}
+  materialToApply: {fileID: 0}
